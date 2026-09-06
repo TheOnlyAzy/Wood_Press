@@ -1,9 +1,10 @@
 import hashlib
-import html
 import json
 import os
 import re
 import sqlite3
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urljoin
@@ -17,8 +18,18 @@ from flask import Flask, jsonify, request, send_from_directory
 BASE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE, "data", "wood_press.db")
 SOURCES = json.load(open(os.path.join(BASE, "sources.json"), encoding="utf-8"))
-HEADERS = {"User-Agent": "WoodPress/0.3 (+news aggregator)"}
+HEADERS = {"User-Agent": "WoodPress/0.3.1 (+news aggregator)"}
 app = Flask(__name__, static_folder=BASE)
+
+refresh_state = {
+    "running": False,
+    "started": None,
+    "finished": None,
+    "added": 0,
+    "error": None,
+    "duration_seconds": 0,
+}
+refresh_lock = threading.Lock()
 
 
 def db():
@@ -79,10 +90,13 @@ def categories(title, summary, country):
 
 
 def original_url(url):
+    """Try to turn a Google News redirect into the publisher URL.
+    Short timeout keeps a slow publisher from blocking the collector for long.
+    """
     if not url:
         return url
     try:
-        r = requests.get(url, headers=HEADERS, timeout=8, allow_redirects=True, stream=True)
+        r = requests.get(url, headers=HEADERS, timeout=3, allow_redirects=True, stream=True)
         return r.url
     except requests.RequestException:
         return url
@@ -119,11 +133,12 @@ def fetch_one_rss(q):
         "&ceid=" + ("PL:pl" if q["country"] == "PL" else "DE:de")
     )
     try:
-        response = requests.get(url, headers=HEADERS, timeout=15)
+        response = requests.get(url, headers=HEADERS, timeout=10)
         response.raise_for_status()
         feed = feedparser.parse(response.content)
         cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
-        for e in feed.entries:
+        # Keep refresh bounded. Google News feeds normally contain a small set of recent results.
+        for e in feed.entries[:20]:
             d = parse_date(e)
             if d and d < cutoff:
                 continue
@@ -133,7 +148,7 @@ def fetch_one_rss(q):
             if save_article(title, summary, e.get("link"), source or q["name"], q["country"], d):
                 added += 1
     except Exception as ex:
-        print("RSS", q["name"], repr(ex))
+        print("RSS", q["name"], repr(ex), flush=True)
     return added
 
 
@@ -149,12 +164,11 @@ def fetch_rss():
 def fetch_one_web(s):
     added = 0
     try:
-        r = requests.get(s["url"], headers=HEADERS, timeout=15)
+        r = requests.get(s["url"], headers=HEADERS, timeout=10)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         page_context = clean(soup.title.get_text(" ") if soup.title else "")
         keywords = sum(SOURCES["keywords"].values(), [])
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
         for a in soup.find_all("a", href=True):
             title = clean(a.get_text(" ", strip=True))
             if len(title) < 25 or len(title) > 220:
@@ -167,7 +181,7 @@ def fetch_one_web(s):
             if save_article(title, "", u, s["name"], s["country"], None):
                 added += 1
     except Exception as ex:
-        print("WEB", s["name"], repr(ex))
+        print("WEB", s["name"], repr(ex), flush=True)
     return added
 
 
@@ -181,9 +195,35 @@ def fetch_web_pages():
 
 
 def refresh_engine():
-    started = datetime.now(timezone.utc)
+    started = time.monotonic()
     added = fetch_rss() + fetch_web_pages()
-    return {"added": added, "updated": datetime.now(timezone.utc).isoformat(), "duration_seconds": round((datetime.now(timezone.utc) - started).total_seconds(), 1)}
+    return {
+        "added": added,
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "duration_seconds": round(time.monotonic() - started, 1),
+    }
+
+
+def run_refresh_background():
+    global refresh_state
+    try:
+        result = refresh_engine()
+        with refresh_lock:
+            refresh_state.update({
+                "running": False,
+                "finished": datetime.now(timezone.utc).isoformat(),
+                "added": result["added"],
+                "error": None,
+                "duration_seconds": result["duration_seconds"],
+            })
+    except Exception as ex:
+        print("REFRESH", repr(ex), flush=True)
+        with refresh_lock:
+            refresh_state.update({
+                "running": False,
+                "finished": datetime.now(timezone.utc).isoformat(),
+                "error": str(ex),
+            })
 
 
 @app.get("/")
@@ -193,7 +233,7 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return jsonify({"ok": True, "version": "0.3"})
+    return jsonify({"ok": True, "version": "0.3.1", "refresh_running": refresh_state["running"]})
 
 
 @app.get("/api/news")
@@ -221,15 +261,39 @@ def news():
         if cat != "Wszystkie" and cat not in cats:
             continue
         out.append({**dict(r), "categories": cats})
-    return jsonify({"updated": datetime.now(timezone.utc).isoformat(), "count": len(out), "items": out})
+    return jsonify({
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "count": len(out),
+        "items": out,
+        "refresh_running": refresh_state["running"],
+    })
+
+
+@app.get("/api/refresh/status")
+def refresh_status():
+    with refresh_lock:
+        return jsonify(dict(refresh_state))
 
 
 @app.post("/api/refresh")
 def api_refresh():
-    return jsonify(refresh_engine())
+    global refresh_state
+    with refresh_lock:
+        if refresh_state["running"]:
+            return jsonify({"started": False, "running": True}), 202
+        refresh_state = {
+            "running": True,
+            "started": datetime.now(timezone.utc).isoformat(),
+            "finished": None,
+            "added": 0,
+            "error": None,
+            "duration_seconds": 0,
+        }
+        threading.Thread(target=run_refresh_background, daemon=True).start()
+    return jsonify({"started": True, "running": True}), 202
 
 
 if __name__ == "__main__":
     db()
-    print("Wood Press 0.3 — http://127.0.0.1:5000")
+    print("Wood Press 0.3.1 — http://127.0.0.1:5000")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
