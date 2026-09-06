@@ -1,0 +1,169 @@
+{
+  "rss_queries": [
+    {
+      "name": "Google News PL — drewno okrągłe",
+      "country": "PL",
+      "query": "\"drewno okrągłe\" OR \"drewno okragle\" OR S2A OR S2AP",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Google News PL — Lasy Państwowe sprzedaż drewna",
+      "country": "PL",
+      "query": "Lasy Państwowe sprzedaż drewna OR cennik drewna OR aukcja drewna",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Google News PL — branża drzewna",
+      "country": "PL",
+      "query": "branża drzewna OR tartak OR przemysł drzewny OR drewno ceny",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Google News PL — drewno poprodukcyjne",
+      "country": "PL",
+      "query": "trociny OR zrębka OR odpady drzewne OR biomasa drewno",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Google News DE — Rundholz",
+      "country": "DE",
+      "query": "Rundholz OR Sägerundholz OR Stammholz",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Google News DE — Holzpreise",
+      "country": "DE",
+      "query": "Holzpreise OR Rundholzpreise OR Holzmarkt",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Google News DE — Industrieholz",
+      "country": "DE",
+      "query": "Industrieholz OR Restholz OR Sägespäne OR Hackschnitzel",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Google News DE — Forstwirtschaft",
+      "country": "DE",
+      "query": "Forstwirtschaft Holzmarkt OR Sägewerk Holz OR Holzeinkauf",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Lasy Państwowe — Google News",
+      "country": "PL",
+      "query": "site:lasy.gov.pl drewno",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Drewno.pl — Google News",
+      "country": "PL",
+      "query": "site:drewno.pl drewno OR tartak OR przemysł drzewny",
+      "lang": "pl-PL"
+    },
+    {
+      "name": "Holz-Zentralblatt — Google News",
+      "country": "DE",
+      "query": "site:holz-zentralblatt.de Holz OR Rundholz OR Sägewerk",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Holzkurier — Google News",
+      "country": "DE",
+      "query": "site:holzkurier.com Rundholz OR Holzmarkt OR Sägewerk",
+      "lang": "de-DE"
+    },
+    {
+      "name": "Holzmarktinfo — Google News",
+      "country": "DE",
+      "query": "site:holzmarktinfo.de Rundholz OR Holzpreise OR Holzmarkt",
+      "lang": "de-DE"
+    }
+  ],
+  "web_sources": [
+    {
+      "name": "Lasy Państwowe — Aktualności",
+      "country": "PL",
+      "url": "https://www.lasy.gov.pl/pl/informacje/aktualnosci"
+    },
+    {
+      "name": "Drewno.pl",
+      "country": "PL",
+      "url": "https://www.drewno.pl/"
+    },
+    {
+      "name": "Holz-Zentralblatt",
+      "country": "DE",
+      "url": "https://holz-zentralblatt.de/"
+    },
+    {
+      "name": "Holzkurier — Rundholz",
+      "country": "DE",
+      "url": "https://www.holzkurier.com/rundholz.html"
+    },
+    {
+      "name": "Holzmarktinfo",
+      "country": "DE",
+      "url": "https://www.holzmarktinfo.de/"
+    }
+  ],
+  "keywords": {
+    "Drewno okrągłe": [
+      "drewno okrągłe",
+      "drewno okragle",
+      "drewno wielkowymiarowe",
+      "S2A",
+      "S2AP",
+      "Rundholz",
+      "Sägerundholz",
+      "Stammholz",
+      "Kiefer",
+      "Fichte",
+      "Buche",
+      "Eiche"
+    ],
+    "Branża drzewna": [
+      "branża drzewna",
+      "przemysł drzewny",
+      "tartak",
+      "tartaki",
+      "sägewerk",
+      "holzindustrie",
+      "holzverarbeitung",
+      "Holzmarkt"
+    ],
+    "Ceny / rynek": [
+      "cena",
+      "ceny",
+      "cennik",
+      "aukcja",
+      "sprzedaż",
+      "price",
+      "preis",
+      "preise",
+      "Holzpreise",
+      "Rundholzpreise",
+      "Holzmarkt"
+    ],
+    "Lasy Państwowe": [
+      "Lasy Państwowe",
+      "nadleśnictwo",
+      "RDLP",
+      "DGLP",
+      "Staatsforsten",
+      "Landesforsten",
+      "Forstamt"
+    ],
+    "Drewno poprodukcyjne": [
+      "trociny",
+      "zrębka",
+      "zrębki",
+      "odpady drzewne",
+      "biomasa",
+      "restholz",
+      "sägespäne",
+      "hackschnitzel",
+      "sägerestholz",
+      "industrieholz"
+    ]
+  }
+}
